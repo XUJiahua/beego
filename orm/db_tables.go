@@ -178,7 +178,7 @@ func (t *dbTables) getJoinSQL() (join string) {
 			t1, t2 string
 			c1, c2 string
 		)
-		t1 = "T0"
+		t1 = ""
 		if jt.jtl != nil {
 			t1 = jt.jtl.index
 		}
@@ -285,7 +285,7 @@ loopFor:
 		loopEnd:
 
 			if i == 0 || jtl == nil {
-				index = "T0"
+				index = " "
 			} else {
 				index = jtl.index
 			}
@@ -363,7 +363,7 @@ func (t *dbTables) getCondSQL(cond *Condition, sub bool, tz *time.Location) (whe
 				exprs = exprs[:num]
 			}
 
-			index, _, fi, suc := t.parseExprs(mi, exprs)
+			_, _, fi, suc := t.parseExprs(mi, exprs)
 			if !suc {
 				panic(fmt.Errorf("unknown field/column name `%s`", strings.Join(p.exprs, ExprSep)))
 			}
@@ -374,7 +374,7 @@ func (t *dbTables) getCondSQL(cond *Condition, sub bool, tz *time.Location) (whe
 
 			operSQL, args := t.base.GenerateOperatorSQL(mi, fi, operator, p.args, tz)
 
-			leftCol := fmt.Sprintf("%s.%s%s%s", index, Q, fi.column, Q)
+			leftCol := fmt.Sprintf("%s%s%s", Q, fi.column, Q)
 			t.base.GenerateOperatorLeftCol(fi, operator, &leftCol)
 
 			where += fmt.Sprintf("%s %s ", leftCol, operSQL)
@@ -431,12 +431,12 @@ func (t *dbTables) getOrderSQL(orders []string) (orderSQL string) {
 		}
 		exprs := strings.Split(order, ExprSep)
 
-		index, _, fi, suc := t.parseExprs(t.mi, exprs)
+		_, _, fi, suc := t.parseExprs(t.mi, exprs)
 		if !suc {
 			panic(fmt.Errorf("unknown field/column name `%s`", strings.Join(exprs, ExprSep)))
 		}
 
-		orderSqls = append(orderSqls, fmt.Sprintf("%s.%s%s%s %s", index, Q, fi.column, Q, asc))
+		orderSqls = append(orderSqls, fmt.Sprintf("%s%s%s %s", Q, fi.column, Q, asc))
 	}
 
 	orderSQL = fmt.Sprintf("ORDER BY %s ", strings.Join(orderSqls, ", "))

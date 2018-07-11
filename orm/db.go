@@ -726,7 +726,6 @@ func (d *dbBase) UpdateBatch(q dbQuerier, qs *querySet, mi *modelInfo, cond *Con
 	Q := d.ins.TableQuote()
 
 	if d.ins.SupportUpdateJoin() {
-		T = "T0."
 	}
 
 	cols := make([]string, 0, len(columns))
@@ -753,9 +752,9 @@ func (d *dbBase) UpdateBatch(q dbQuerier, qs *querySet, mi *modelInfo, cond *Con
 	sets := strings.Join(cols, ", ") + " "
 
 	if d.ins.SupportUpdateJoin() {
-		query = fmt.Sprintf("UPDATE %s%s%s T0 %sSET %s%s", Q, mi.table, Q, join, sets, where)
+		query = fmt.Sprintf("UPDATE %s%s%s %sSET %s%s", Q, mi.table, Q, join, sets, where)
 	} else {
-		supQuery := fmt.Sprintf("SELECT T0.%s%s%s FROM %s%s%s T0 %s%s", Q, mi.fields.pk.column, Q, Q, mi.table, Q, join, where)
+		supQuery := fmt.Sprintf("SELECT %s%s%s FROM %s%s%s T0 %s%s", Q, mi.fields.pk.column, Q, Q, mi.table, Q, join, where)
 		query = fmt.Sprintf("UPDATE %s%s%s SET %sWHERE %s%s%s IN ( %s )", Q, mi.table, Q, sets, Q, mi.fields.pk.column, Q, supQuery)
 	}
 
@@ -813,8 +812,8 @@ func (d *dbBase) DeleteBatch(q dbQuerier, qs *querySet, mi *modelInfo, cond *Con
 	where, args := tables.getCondSQL(cond, false, tz)
 	join := tables.getJoinSQL()
 
-	cols := fmt.Sprintf("T0.%s%s%s", Q, mi.fields.pk.column, Q)
-	query := fmt.Sprintf("SELECT %s FROM %s%s%s T0 %s%s", cols, Q, mi.table, Q, join, where)
+	cols := fmt.Sprintf("%s%s%s", Q, mi.fields.pk.column, Q)
+	query := fmt.Sprintf("SELECT %s FROM %s%s%s %s%s", cols, Q, mi.table, Q, join, where)
 
 	d.ins.ReplaceMarks(&query)
 
@@ -943,8 +942,8 @@ func (d *dbBase) ReadBatch(q dbQuerier, qs *querySet, mi *modelInfo, cond *Condi
 	}
 
 	colsNum := len(tCols)
-	sep := fmt.Sprintf("%s, T0.%s", Q, Q)
-	sels := fmt.Sprintf("T0.%s%s%s", Q, strings.Join(tCols, sep), Q)
+	sep := fmt.Sprintf("%s, %s", Q, Q)
+	sels := fmt.Sprintf("%s%s%s", Q, strings.Join(tCols, sep), Q)
 
 	tables := newDbTables(mi, d.ins)
 	tables.parseRelated(qs.related, qs.relDepth)
@@ -967,7 +966,7 @@ func (d *dbBase) ReadBatch(q dbQuerier, qs *querySet, mi *modelInfo, cond *Condi
 	if qs.distinct {
 		sqlSelect += " DISTINCT"
 	}
-	query := fmt.Sprintf("%s %s FROM %s%s%s T0 %s%s%s%s%s", sqlSelect, sels, Q, mi.table, Q, join, where, groupBy, orderBy, limit)
+	query := fmt.Sprintf("%s %s FROM %s%s%s %s%s%s%s%s", sqlSelect, sels, Q, mi.table, Q, join, where, groupBy, orderBy, limit)
 
 	d.ins.ReplaceMarks(&query)
 
@@ -1097,7 +1096,7 @@ func (d *dbBase) Count(q dbQuerier, qs *querySet, mi *modelInfo, cond *Condition
 
 	Q := d.ins.TableQuote()
 
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s%s%s T0 %s%s%s", Q, mi.table, Q, join, where, groupBy)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s%s%s %s%s%s", Q, mi.table, Q, join, where, groupBy)
 
 	if groupBy != "" {
 		query = fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS T", query)
@@ -1607,7 +1606,7 @@ func (d *dbBase) ReadValues(q dbQuerier, qs *querySet, mi *modelInfo, cond *Cond
 		cols = make([]string, 0, len(mi.fields.dbcols))
 		infos = make([]*fieldInfo, 0, len(exprs))
 		for _, fi := range mi.fields.fieldsDB {
-			cols = append(cols, fmt.Sprintf("T0.%s%s%s %s%s%s", Q, fi.column, Q, Q, fi.name, Q))
+			cols = append(cols, fmt.Sprintf("%s%s%s %s%s%s", Q, fi.column, Q, Q, fi.name, Q))
 			infos = append(infos, fi)
 		}
 	}
@@ -1624,7 +1623,7 @@ func (d *dbBase) ReadValues(q dbQuerier, qs *querySet, mi *modelInfo, cond *Cond
 	if qs.distinct {
 		sqlSelect += " DISTINCT"
 	}
-	query := fmt.Sprintf("%s %s FROM %s%s%s T0 %s%s%s%s%s", sqlSelect, sels, Q, mi.table, Q, join, where, groupBy, orderBy, limit)
+	query := fmt.Sprintf("%s %s FROM %s%s%s %s%s%s%s%s", sqlSelect, sels, Q, mi.table, Q, join, where, groupBy, orderBy, limit)
 
 	d.ins.ReplaceMarks(&query)
 
